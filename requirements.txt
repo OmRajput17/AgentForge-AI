@@ -1,0 +1,12 @@
+typer
+rich
+pydantic
+pydantic-settings
+pyyaml
+langgraph
+langchain
+langchain-openai
+langchain-groq
+httpx
+python-dotenv
+
