@@ -13,12 +13,11 @@ project_name = "agentforge"
 
 list_of_files = [
     f"agentforge/__init__.py",
-    f"agentforge/cli.py.py",
+    f"agentforge/cli.py",
     f"agentforge/config.py",
     f"agentforge/logger.py",
     f"agentforge/approval.py",
     f"agentforge/orchestrator.py",
-    f"agentforge/eval_engine.py",
     f"agentforge/eval_engine.py",
     f"agentforge/agents/__init__.py",
     f"agentforge/agents/base.py",

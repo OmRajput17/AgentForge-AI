@@ -9,4 +9,4 @@ langchain-openai
 langchain-groq
 httpx
 python-dotenv
-
+tenacity

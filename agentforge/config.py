@@ -43,7 +43,7 @@ def init_config():
     default = {
         'llm': {'provider':'openai','model':'gpt-4o','api_key':''},
         'mcp_servers': {
-            'github_token':'','notion_token':'','slack_token':'','tavily_key':'',
+            'github_token':'','notion_token':'','slack_token':'','tavily_api':'',
             'github_owner':'','github_repo':''
         },
         'auto_approve': False,
