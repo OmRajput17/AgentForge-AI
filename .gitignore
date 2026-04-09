@@ -2,3 +2,4 @@ venv/
 __pycache__/
 AgentForge_v2_Build_Guide.docx
 .coverage
+agentforge.egg-info
