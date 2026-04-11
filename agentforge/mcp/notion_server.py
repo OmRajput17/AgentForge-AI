@@ -18,8 +18,11 @@ class NotionMCPServer(BaseMCPServer):
         self._client = httpx.Client(timeout=5.0)
 
     def health_check(self) -> bool:
-        r = self._resilient_get(self._client, f'{self.BASE}/users/me', headers = self._headers)
-        return r.status_code == 200
+        try:
+            r = self._resilient_get(self._client, f'{self.BASE}/users/me', headers = self._headers)
+            return r.status_code == 200
+        except Exception:
+            return False
 
     def create_page(self, parent_id: str, title: str, content: str) -> dict:
         self._log_call(f'create_page → {title}')

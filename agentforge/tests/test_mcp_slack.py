@@ -46,8 +46,8 @@ def test_send_message_failure(slack_server):
     mock_resp.json.return_value = {'ok': False, 'error': 'channel_not_found'}
     slack_server._client.post.return_value = mock_resp
 
-    res = slack_server.send_message("#invalid", "Hello world")
-    assert res == {'ok': False, 'error': 'channel_not_found'}
+    with pytest.raises(RuntimeError, match="Slack API error: channel_not_found"):
+        slack_server.send_message("#invalid", "Hello world")
 
 def test_list_channels(slack_server):
     mock_resp = MagicMock()

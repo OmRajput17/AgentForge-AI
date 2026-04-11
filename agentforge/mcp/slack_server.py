@@ -12,48 +12,68 @@ class SlackMCPServer(BaseMCPServer):
         self._token = get_settings().mcp_servers.slack_token
         self._client = httpx.Client(timeout=5.0)
 
-    def _h(self) -> dict:
+    def _headers(self) -> dict:
         return {
             'Authorization': f'Bearer {self._token}',
             'Content-Type': 'application/json',
         }
     
     def health_check(self) -> bool:
-        r = self._resilient_get(
-            self._client,
-            f'{self.BASE}/auth.test',
-            headers = self._h()
-        )
+        try:
+            r = self._resilient_get(
+                self._client,
+                f'{self.BASE}/auth.test',
+                headers=self._headers()
+            )
+            r.raise_for_status()
 
-        return r.json().get('ok', False)
+            data = r.json()
+            return data.get('ok', False)
+
+        except (ValueError, Exception):
+            return False
 
     def send_message(self, channel: str, text: str)->dict:
         self._log_call(f'send_message → {channel}')
         r = self._resilient_post(
             self._client,
             f'{self.BASE}/chat.postMessage',
-            headers = self._h(),
+            headers = self._headers(),
             json = {
                 'channel':channel,
                 'text': text
             }
         )
 
-        d = r.json()
+        r.raise_for_status()    
+        try:
+            d = r.json()
+        except ValueError:
+            raise RuntimeError("Invalid JSON response from Slack")  
         if d.get('ok'):
             self.logger.success(f'Message sent to {channel}')
             return {'ok': True, 'ts': d.get('ts')}
         else:
-            self.logger.error(f'Failed to send message: {d.get("error")}')
-            return {'ok': False, 'error': d.get('error')}
+            error = d.get('error')
+            self.logger.error(f'Failed to send message: {error}')
+            raise RuntimeError(f"Slack API error: {error}")
 
-    
     def list_channels(self) -> list[dict]:
         self._log_call('list_channels')
         r = self._resilient_get(
             self._client,
             f'{self.BASE}/conversations.list',
-            headers = self._h()
+            headers = self._headers()
         )
 
-        return [{'id' : c['id'], 'name':c['name']} for c in r.json().get('channels', [])]
+        r.raise_for_status()
+
+        data = r.json()
+
+        if not data.get('ok'):
+            raise RuntimeError(f"Slack API error: {data.get('error')}")
+
+        return [
+            {'id': c.get('id'), 'name': c.get('name')}
+            for c in data.get('channels', [])
+        ]
