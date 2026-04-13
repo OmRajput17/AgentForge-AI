@@ -26,8 +26,11 @@ class GitHubMCPServer(BaseMCPServer):
         self._client = httpx.Client(timeout=5.0)
 
     def health_check(self) -> bool:
-        r = self._resilient_get(self._client, f'{self.BASE}/user', headers=self._headers)
-        return r.status_code == 200
+        try:
+            r = self._resilient_get(self._client, f'{self.BASE}/user', headers=self._headers)
+            return True
+        except Exception:
+            return False
 
     def create_issue(self,title: str,body: str,owner: str = "",repo: str = "") -> dict:
         o,r = owner or self._owner, repo or self._repo

@@ -29,7 +29,7 @@ class CircuitBreaker:
             elapsed = asyncio.get_event_loop().time() - self._open_at
             if elapsed > self._reset:
                 self._open = False # half-open: allow one probe
-            return self._open
+        return self._open
 
 
 class BaseMCPServer(ABC):
