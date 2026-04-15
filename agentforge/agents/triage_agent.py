@@ -1,11 +1,8 @@
 # agentforge/agents/triage_agent.py
-import re
-import json
 import asyncio
-from langchain_core.messages import HumanMessage
-from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 from agentforge.agents.base import BaseAgent
+from agentforge.agents.schemas import TriageItem, TriageResponse
 from agentforge.mcp.github_server import GitHubMCPServer
 from agentforge.mcp.notion_server import NotionMCPServer
 from agentforge.mcp.slack_server import SlackMCPServer
@@ -13,67 +10,6 @@ from agentforge.graph.state import AgentForgeState
 from agentforge.config import get_settings
 
 VALID_SEVERITIES = {'critical', 'high', 'medium', 'low'}
-
-
-def _safe_parse_json(raw: str) -> list | None:
-    """
-    Safely extract a JSON array from LLM output.
-    Handles markdown ```json fences, extra surrounding text, and invalid JSON.
-    Returns the parsed list on success, or None on failure.
-    """
-    text = raw.strip()
-
-    # Strip markdown code fences (```json ... ``` or ``` ... ```)
-    fence_match = re.search(r'```(?:json)?\s*\n?(.*?)```', text, re.DOTALL)
-    if fence_match:
-        text = fence_match.group(1).strip()
-
-    # Try parsing directly first
-    try:
-        parsed = json.loads(text)
-        if isinstance(parsed, list):
-            return parsed
-    except json.JSONDecodeError:
-        pass
-
-    # Fallback: find the first [...] in the text
-    bracket_match = re.search(r'\[.*?\]', text, re.DOTALL)
-    if bracket_match:
-        try:
-            parsed = json.loads(bracket_match.group(0))
-            if isinstance(parsed, list):
-                return parsed
-        except json.JSONDecodeError:
-            pass
-
-    return None
-
-
-def _validate_classified(items: list) -> list[dict]:
-    """
-    Validate and sanitize classified items from LLM output.
-    Each item must have a valid 'number' (int) and 'severity' (string).
-    Invalid severities default to 'low'. Malformed items are skipped.
-    """
-    validated = []
-    for item in items:
-        if not isinstance(item, dict):
-            continue
-
-        number = item.get('number')
-        if not isinstance(number, int):
-            continue
-
-        severity = str(item.get('severity', 'low')).lower().strip()
-        if severity not in VALID_SEVERITIES:
-            severity = 'low'
-
-        validated.append({
-            'number': number,
-            'severity': severity,
-            'reason': item.get('reason', ''),
-        })
-    return validated
 
 
 class TriageAgent(BaseAgent):
@@ -101,8 +37,8 @@ class TriageAgent(BaseAgent):
 
     async def _classify_issues(self, issues: list[dict]) -> list[dict]:
         """
-        Ask LLM to classify issues by severity.
-        Returns a validated list of classified items, or [] on failure.
+        Ask LLM to classify issues by severity using structured output.
+        Returns a list of validated dicts, or [] on failure.
         """
         issues_text = '\n'.join(
             f'#{i.get("number", "?")}: {i.get("title", "")} -- {(i.get("body") or "")[:200]}'
@@ -121,23 +57,19 @@ class TriageAgent(BaseAgent):
                 Issues:
                 {issues_text}
 
-                Return a JSON array:
-                [{{"number": 1, "severity": "high", "reason": "brief reason"}}]
-                Return ONLY the JSON array.
+                Return the classified issues as a JSON object with an "items" key
+                containing an array of objects, each with "number", "severity", and "reason".
             '''
-        resp = await self._llm.ainvoke([HumanMessage(content=prompt)])
 
-        raw = resp.content
-        if not raw:
-            self.logger.error('LLM returned empty/None content')
+        structured_llm = self._llm.with_structured_output(TriageResponse)
+        try:
+            result = await structured_llm.ainvoke(prompt)
+        except Exception as e:
+            self.logger.error(f'LLM classification failed: {e}')
             return []
 
-        parsed = _safe_parse_json(raw)
-        if parsed is None:
-            self.logger.error(f'Failed to parse LLM response as JSON: {raw[:300]}')
-            return []
-
-        return _validate_classified(parsed)
+        # Convert Pydantic models to dicts for downstream compatibility
+        return [item.model_dump() for item in result.items]
 
     async def _build_report(self, issues: list[dict], classified: list[dict]) -> str:
         """

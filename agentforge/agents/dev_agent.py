@@ -1,9 +1,8 @@
 # agentforge/agents/dev_agent.py
-import json
 import asyncio
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage
 from agentforge.agents.base import BaseAgent
+from agentforge.agents.schemas import DevPlan
 from agentforge.mcp.github_server import GitHubMCPServer
 from agentforge.graph.state import AgentForgeState
 from agentforge.config import get_settings
@@ -19,16 +18,24 @@ class DevAgent(BaseAgent):
         llm    = ChatOpenAI(model=get_settings().llm.model, temperature=0)
         prompt = f'''For this GitHub task: {subtask}
                 Choose ONE action: create_issue | list_issues | read_repo
-                Return JSON: {{"action": "", "title": "", "body": ""}}
+                Return a JSON object with keys: action, title, body
             '''
-        plan = json.loads((await llm.ainvoke([HumanMessage(content=prompt)])).content)
 
-        if plan['action'] == 'create_issue':
-            r = await asyncio.to_thread(self._github.create_issue, plan['title'], plan['body'])
+        structured_llm = llm.with_structured_output(DevPlan)
+        try:
+            plan = await structured_llm.ainvoke(prompt)
+        except Exception as e:
+            self.logger.error(f'LLM parsing failed: {e}')
+            return {'output': f'LLM error: {e}', 'success': False, 'actions_taken': []}
+
+        action = plan.action  # already lowercased by validator
+
+        if action == 'create_issue':
+            r = await asyncio.to_thread(self._github.create_issue, plan.title, plan.body)
             return {'output': f'Issue created: {r["url"]}',
                     'success': True, 'actions_taken': [f'Created issue #{r["number"]}']}
 
-        if plan['action'] == 'list_issues':
+        if action == 'list_issues':
             issues = await asyncio.to_thread(self._github.list_issues)
             return {'output': str(issues), 'success': True, 'actions_taken': ['Listed issues']}
 
