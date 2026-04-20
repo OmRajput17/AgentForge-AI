@@ -60,3 +60,14 @@ class Standup(BaseModel):
     yesterday: str
     today: str
     blockers: str
+
+# ── Orchestrator ────────────────────────────────────────────────────
+
+class PlanItem(BaseModel):
+    agent: str
+    subtask: str
+    confidence: float
+    parallel: bool
+
+class Plan(BaseModel):
+    items: list[PlanItem]
