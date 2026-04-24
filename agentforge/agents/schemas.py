@@ -27,13 +27,14 @@ class DevPlan(BaseModel):
 
 # ── TriageAgent ─────────────────────────────────────────────────────
 
-VALID_SEVERITIES = frozenset({"critical", "high", "medium", "low"})
+VALID_SEVERITIES = frozenset({"critical", "high", "medium", "low", "wontfix"})
 
 
 class TriageItem(BaseModel):
     """Single classified issue with severity."""
-    number: int
+    issue_number: int
     severity: str
+    confidence: float = 1.0
     reason: str = ""
 
     @field_validator("severity")

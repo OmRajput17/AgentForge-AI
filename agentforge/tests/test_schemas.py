@@ -40,32 +40,36 @@ class TestDevPlan:
 class TestTriageItem:
 
     def test_valid_severity(self):
-        item = TriageItem(number=1, severity="high", reason="broken")
+        item = TriageItem(issue_number=1, severity="high", reason="broken")
         assert item.severity == "high"
 
     def test_severity_lowercased(self):
-        item = TriageItem(number=1, severity="HIGH")
+        item = TriageItem(issue_number=1, severity="HIGH")
         assert item.severity == "high"
 
     def test_severity_stripped(self):
-        item = TriageItem(number=1, severity="  Medium  ")
+        item = TriageItem(issue_number=1, severity="  Medium  ")
         assert item.severity == "medium"
 
     def test_invalid_severity_defaults_to_low(self):
-        item = TriageItem(number=1, severity="URGENT")
+        item = TriageItem(issue_number=1, severity="URGENT")
         assert item.severity == "low"
 
     def test_empty_severity_defaults_to_low(self):
-        item = TriageItem(number=1, severity="")
+        item = TriageItem(issue_number=1, severity="")
         assert item.severity == "low"
 
     def test_default_reason(self):
-        item = TriageItem(number=1, severity="low")
+        item = TriageItem(issue_number=1, severity="low")
         assert item.reason == ""
 
+    def test_default_confidence(self):
+        item = TriageItem(issue_number=1, severity="low")
+        assert item.confidence == 1.0
+
     def test_all_valid_severities(self):
-        for sev in ("critical", "high", "medium", "low"):
-            item = TriageItem(number=1, severity=sev)
+        for sev in ("critical", "high", "medium", "low", "wontfix"):
+            item = TriageItem(issue_number=1, severity=sev)
             assert item.severity == sev
 
 
@@ -77,11 +81,11 @@ class TestTriageResponse:
 
     def test_wraps_list(self):
         resp = TriageResponse(items=[
-            TriageItem(number=1, severity="high", reason="bad"),
-            TriageItem(number=2, severity="low", reason="minor"),
+            TriageItem(issue_number=1, severity="high", reason="bad"),
+            TriageItem(issue_number=2, severity="low", reason="minor"),
         ])
         assert len(resp.items) == 2
-        assert resp.items[0].number == 1
+        assert resp.items[0].issue_number == 1
         assert resp.items[1].severity == "low"
 
     def test_empty_list(self):
@@ -90,10 +94,10 @@ class TestTriageResponse:
 
     def test_model_dump(self):
         resp = TriageResponse(items=[
-            TriageItem(number=1, severity="critical", reason="data loss"),
+            TriageItem(issue_number=1, severity="critical", reason="data loss"),
         ])
         dumped = resp.items[0].model_dump()
-        assert dumped == {"number": 1, "severity": "critical", "reason": "data loss"}
+        assert dumped == {"issue_number": 1, "severity": "critical", "confidence": 1.0, "reason": "data loss"}
 
 
 # ═══════════════════════════════════════════════════════════════════

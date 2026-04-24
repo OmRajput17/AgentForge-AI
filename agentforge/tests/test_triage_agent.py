@@ -18,7 +18,7 @@ class TestClassifyIssues:
         mock_structured = MagicMock()
         mock_structured.ainvoke = AsyncMock(
             return_value=TriageResponse(items=[
-                TriageItem(number=1, severity='high', reason='broken'),
+                TriageItem(issue_number=1, severity='high', reason='broken'),
             ])
         )
         agent._llm = MagicMock()
@@ -29,7 +29,7 @@ class TestClassifyIssues:
 
         assert len(result) == 1
         assert result[0]["severity"] == "high"
-        assert result[0]["number"] == 1
+        assert result[0]["issue_number"] == 1
 
     async def test_llm_exception_returns_empty(self, mock_llm_cls):
         """LLM raises an exception — should return [] gracefully."""
@@ -50,7 +50,7 @@ class TestClassifyIssues:
         mock_structured = MagicMock()
         mock_structured.ainvoke = AsyncMock(
             return_value=TriageResponse(items=[
-                TriageItem(number=1, severity='URGENT', reason='bad'),
+                TriageItem(issue_number=1, severity='URGENT', reason='bad'),
             ])
         )
         agent._llm = MagicMock()
@@ -67,8 +67,8 @@ class TestClassifyIssues:
         mock_structured = MagicMock()
         mock_structured.ainvoke = AsyncMock(
             return_value=TriageResponse(items=[
-                TriageItem(number=1, severity='critical', reason='data loss'),
-                TriageItem(number=2, severity='medium', reason='perf'),
+                TriageItem(issue_number=1, severity='critical', reason='data loss'),
+                TriageItem(issue_number=2, severity='medium', reason='perf'),
             ])
         )
         agent._llm = MagicMock()
@@ -96,14 +96,14 @@ class TestBuildReport:
     async def test_report_contains_all_severities(self, mock_llm_cls):
         agent = TriageAgent()
         issues = [
-            {"number": 1, "title": "Critical bug"},
-            {"number": 2, "title": "Minor typo"},
+            {"number": 1, "title": "Critical bug", "url": "https://github.com/issues/1"},
+            {"number": 2, "title": "Minor typo", "url": "https://github.com/issues/2"},
         ]
         classified = [
-            {"number": 1, "severity": "critical", "reason": "data loss"},
-            {"number": 2, "severity": "low", "reason": "cosmetic"},
+            {"issue_number": 1, "severity": "critical", "reason": "data loss"},
+            {"issue_number": 2, "severity": "low", "reason": "cosmetic"},
         ]
-        report = await agent._build_report(issues, classified)
+        report = agent._build_report(issues, classified)
 
         assert "Bug Triage Report" in report
         assert "CRITICAL (1)" in report
@@ -114,9 +114,9 @@ class TestBuildReport:
     async def test_report_with_no_classified(self, mock_llm_cls):
         """Unclassified issues default to 'low' in the report."""
         agent = TriageAgent()
-        issues = [{"number": 1, "title": "Something"}]
+        issues = [{"number": 1, "title": "Something", "url": "https://github.com/issues/1"}]
         classified = []
-        report = await agent._build_report(issues, classified)
+        report = agent._build_report(issues, classified)
 
         assert "LOW (1)" in report
 
@@ -180,8 +180,8 @@ class TestTriageExecute:
         ]
 
         self._mock_structured_llm(agent, TriageResponse(items=[
-            TriageItem(number=1, severity='critical', reason='data loss'),
-            TriageItem(number=2, severity='medium', reason='perf'),
+            TriageItem(issue_number=1, severity='critical', reason='data loss'),
+            TriageItem(issue_number=2, severity='medium', reason='perf'),
         ]))
 
         result = await agent.execute('triage', {})
@@ -223,8 +223,8 @@ class TestTriageExecute:
         ]
 
         self._mock_structured_llm(agent, TriageResponse(items=[
-            TriageItem(number=1, severity='high', reason=''),
-            TriageItem(number=2, severity='low', reason=''),
+            TriageItem(issue_number=1, severity='high', reason=''),
+            TriageItem(issue_number=2, severity='low', reason=''),
         ]))
 
         # First call fails, second succeeds
@@ -253,7 +253,7 @@ class TestTriageExecute:
         agent._notion.create_page.return_value = {"url": "https://notion.so/page"}
 
         self._mock_structured_llm(agent, TriageResponse(items=[
-            TriageItem(number=1, severity='high', reason='bad'),
+            TriageItem(issue_number=1, severity='high', reason='bad'),
         ]))
 
         result = await agent.execute('triage', {})
