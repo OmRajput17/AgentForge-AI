@@ -2,7 +2,6 @@
 import asyncio
 import uuid
 from datetime import datetime
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 from agentforge.agents.base import BaseAgent
 from agentforge.mcp.github_server import GitHubMCPServer
@@ -10,7 +9,7 @@ from agentforge.mcp.notion_server import NotionMCPServer
 from agentforge.mcp.slack_server import SlackMCPServer
 from agentforge.graph.state import AgentForgeState
 from agentforge.eval_engine import EvalEngine
-from agentforge.config import get_settings
+from agentforge.config import get_settings, get_llm
 from agentforge.logger import AgentLogger
 from agentforge.agents.schemas import TriageItem, TriageResponse
 
@@ -31,10 +30,7 @@ class TriageAgent(BaseAgent):
         self.notion = NotionMCPServer()
         self.slack = SlackMCPServer()
         self.eval = EvalEngine()
-        self.llm = ChatOpenAI(
-            model = get_settings().llm.model,
-            temperature = 0
-        )
+        self.llm = get_llm(temperature=0)
         self.run_id = str(uuid.uuid4())[:8]
     
     async def execute(self, subtask: str, state: AgentForgeState) -> dict:
@@ -89,31 +85,47 @@ class TriageAgent(BaseAgent):
 
         
         # Step 6: Generate Report + Notion Page (blocking MCP → thread)
+        cfg = get_settings().mcp_servers
         report = self._build_report(issues, classified)
-        page = await asyncio.to_thread(
-            self.notion.create_page,
-            parent_id=get_settings().mcp_servers.notion_page_id,
-            title = f'Bug Triage Report - {datetime.now().strftime("%Y-%m-%d")} - run {self.run_id}',
-            content= report
-        )
-        actions.append(f'notion.create_page → {page["url"]}')
+        page_url = None
+
+        if cfg.notion_token and cfg.notion_page_id:
+            try:
+                page = await asyncio.to_thread(
+                    self.notion.create_page,
+                    parent_id=cfg.notion_page_id,
+                    title = f'Bug Triage Report - {datetime.now().strftime("%Y-%m-%d")} - run {self.run_id}',
+                    content= report
+                )
+                page_url = page["url"]
+                actions.append(f'notion.create_page → {page_url}')
+            except Exception as e:
+                self.logger.warn(f'Notion failed (non-fatal): {e}')
+        else:
+            self.logger.warn('Skipping Notion — token or page_id not configured')
 
         # Step 7: Slack alert (blocking MCP → thread)
         critical = [c for c in classified if c['severity'] == 'critical']
-        slack_msg = self._format_slack_alert(classified, page["url"])
-        await asyncio.to_thread(
-            self.slack.send_message,
-            channel='engineering',
-            text = slack_msg
-        )
-        actions.append(f'slack.send_message → #engineering')
+        if cfg.slack_token:
+            try:
+                slack_msg = self._format_slack_alert(classified, page_url or 'N/A')
+                await asyncio.to_thread(
+                    self.slack.send_message,
+                    channel='engineering',
+                    text = slack_msg
+                )
+                actions.append(f'slack.send_message → #engineering')
+            except Exception as e:
+                self.logger.warn(f'Slack failed (non-fatal): {e}')
+        else:
+            self.logger.warn('Skipping Slack — token not configured')
 
         # Step 8: Print eval summary
         self.eval.print_report(run_id=self.run_id)
 
         return {
             'success' : True,
-            'output' : f'Triaged {len(issues)} issues. {len(critical)} critical. Report: {page["url"]}',
+            'output' : f'Triaged {len(issues)} issues. {len(critical)} critical.' + (f' Report: {page_url}' if page_url else ''),
             'actions_taken': actions
         }
 

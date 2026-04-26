@@ -1,5 +1,6 @@
 import pytest
 import asyncio
+import time
 from unittest.mock import MagicMock, patch
 from tenacity import RetryError
 from agentforge.mcp.base import CircuitBreaker, BaseMCPServer, CircuitOpenError
@@ -28,14 +29,12 @@ def test_circuit_breaker_timeout():
     cb.call_failed()
     assert cb.is_open()
     
-    # Mock loop time forward
-    loop = asyncio.get_event_loop()
-    original_time = loop.time
-    loop.time = MagicMock(return_value=original_time() + 1.0)
+    # Mock time.monotonic forward past reset_timeout
+    import time as time_mod
+    original_monotonic = time_mod.monotonic
+    cb._open_at = time_mod.monotonic() - 1.0  # pretend it opened 1 second ago
     
     assert not cb.is_open()
-    
-    loop.time = original_time
 
 def test_base_server_resilient_get_success():
     server = DummyServer("test")
@@ -53,7 +52,7 @@ def test_base_server_circuit_open_raises():
     server = DummyServer("test")
     client = MagicMock()
     server._circuit._open = True
-    server._circuit._open_at = asyncio.get_event_loop().time()
+    server._circuit._open_at = time.monotonic()
     
     with pytest.raises(CircuitOpenError, match="Circuit open for test - skipping call"):
         server._resilient_get(client, "http://test.com")

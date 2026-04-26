@@ -4,7 +4,7 @@ from agentforge.agents.dev_agent import DevAgent
 from agentforge.agents.schemas import DevPlan
 
 @pytest.mark.asyncio
-@patch('agentforge.agents.dev_agent.ChatOpenAI')
+@patch('agentforge.agents.dev_agent.get_llm')
 async def test_dev_agent_create_issue(mock_llm_cls):
     agent = DevAgent()
     # Mock MCP server actions
@@ -25,7 +25,7 @@ async def test_dev_agent_create_issue(mock_llm_cls):
     assert 'Issue created' in res['output']
 
 @pytest.mark.asyncio
-@patch('agentforge.agents.dev_agent.ChatOpenAI')
+@patch('agentforge.agents.dev_agent.get_llm')
 async def test_dev_agent_list_issues(mock_llm_cls):
     agent = DevAgent()
     agent._github = MagicMock()
@@ -44,7 +44,7 @@ async def test_dev_agent_list_issues(mock_llm_cls):
     assert "[{'number': 1}]" in res['output']
 
 @pytest.mark.asyncio
-@patch('agentforge.agents.dev_agent.ChatOpenAI')
+@patch('agentforge.agents.dev_agent.get_llm')
 async def test_dev_agent_unknown_action(mock_llm_cls):
     agent = DevAgent()
     agent._github = MagicMock()
@@ -61,7 +61,7 @@ async def test_dev_agent_unknown_action(mock_llm_cls):
     assert res['output'] == 'Unknown action'
 
 @pytest.mark.asyncio
-@patch('agentforge.agents.dev_agent.ChatOpenAI')
+@patch('agentforge.agents.dev_agent.get_llm')
 async def test_dev_agent_llm_failure(mock_llm_cls):
     """LLM raises an exception — agent should return gracefully."""
     agent = DevAgent()

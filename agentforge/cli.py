@@ -1,4 +1,5 @@
 import typer
+import asyncio
 from rich.console import Console
 from rich.panel import Panel
 from agentforge.config import init_config, get_settings, CONFIG_FILE
@@ -21,7 +22,7 @@ def run(task: str = typer.Argument(..., help='Task in plain english')):
     '''Run a multi-agent workflow for the given task'''
     from agentforge.orchestrator import Orchestrator
     console.print(Panel(f'[bold]{task}[/bold]', title='Task', border_style='cyan'))
-    Orchestrator().run(task)
+    asyncio.run(Orchestrator().run(task))
 
 @app.command()
 def server():
@@ -31,7 +32,6 @@ def server():
         ('GitHub',  bool(cfg.github_token)),
         ('Notion',  bool(cfg.notion_token)),
         ('Slack',   bool(cfg.slack_token)),
-        ('Tavily',  bool(cfg.tavily_api)),
     ]
     for name, ok in rows:
         status = '[green]✅ configured[/green]' if ok else '[red]❌ not configured[/red]'

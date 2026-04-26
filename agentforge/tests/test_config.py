@@ -23,7 +23,7 @@ class TestSettings:
         assert mcp.github_token == ""
         assert mcp.notion_token == ""
         assert mcp.slack_token == ""
-        assert mcp.tavily_api == ""
+        assert mcp.notion_page_id == ""
 
     def test_settings_with_custom_values(self):
         s = Settings(

@@ -1,13 +1,13 @@
 # agentforge/agents/standup_agent.py
 
-from langchain_openai import ChatOpenAI
+
 from agentforge.agents.base import BaseAgent
 from agentforge.agents.schemas import Standup
 from agentforge.mcp.github_server import GitHubMCPServer
 from agentforge.mcp.notion_server import NotionMCPServer
 from agentforge.mcp.slack_server import SlackMCPServer
 from agentforge.graph.state import AgentForgeState
-from agentforge.config import get_settings
+from agentforge.config import get_settings, get_llm
 
 class StandupAgent(BaseAgent):
     '''
@@ -24,7 +24,7 @@ class StandupAgent(BaseAgent):
         self._github =  GitHubMCPServer()
         self._slack =  SlackMCPServer()
         self._notion =  NotionMCPServer()
-        self._llm = ChatOpenAI(model = get_settings().llm.model, temperature = 0)
+        self._llm = get_llm(temperature=0)
 
 
     def _summarise_events(self, events: list[dict]) -> str:

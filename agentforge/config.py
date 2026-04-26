@@ -15,8 +15,8 @@ class LLMConfig(BaseModel):
 class MCPServerConfig(BaseModel):
     github_token: str = ""
     notion_token: str = ""
+    notion_page_id: str = ""
     slack_token: str = ""
-    tavily_api: str = ""
     github_owner: str = "" ## default repo owner
     github_repo: str = "" ## default repo name
 
@@ -36,6 +36,25 @@ def get_settings() -> Settings:
         data = yaml.safe_load(f)
     return Settings(**data)
 
+
+def get_llm(temperature: float = 0):
+    '''Factory: returns the right LangChain chat model based on config provider.'''
+    cfg = get_settings().llm
+    if cfg.provider == 'groq':
+        from langchain_groq import ChatGroq
+        return ChatGroq(
+            model=cfg.model,
+            api_key=cfg.api_key,
+            temperature=temperature,
+        )
+    else:
+        from langchain_openai import ChatOpenAI
+        return ChatOpenAI(
+            model=cfg.model,
+            temperature=temperature,
+        )
+
+
 def init_config():
     CONFIG_DIR.mkdir(exist_ok=True)
     if CONFIG_FILE.exists():
@@ -43,7 +62,8 @@ def init_config():
     default = {
         'llm': {'provider':'openai','model':'gpt-4o','api_key':''},
         'mcp_servers': {
-            'github_token':'','notion_token':'','slack_token':'','tavily_api':'',
+            'github_token':'','notion_token':'','notion_page_id':'',
+            'slack_token':'',
             'github_owner':'','github_repo':''
         },
         'auto_approve': False,
@@ -52,3 +72,4 @@ def init_config():
     }
     with open(CONFIG_FILE,'w') as f:
         yaml.dump(default, f, default_flow_style=False)
+

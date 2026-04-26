@@ -1,7 +1,6 @@
 # agentforge/orchestrator.py 
 
 import json, asyncio
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 from rich.console import Console
 from rich.panel import Panel
@@ -9,7 +8,7 @@ from agentforge.agents.dev_agent import DevAgent
 from agentforge.agents.triage_agent import TriageAgent
 from agentforge.agents.standup_agent import StandupAgent
 from agentforge.graph.state import AgentForgeState
-from agentforge.config import get_settings
+from agentforge.config import get_settings, get_llm
 from agentforge.logger import AgentLogger
 from agentforge.agents.schemas import Plan, PlanItem
 
@@ -32,10 +31,7 @@ KEYWORD_MAPPING = {
 class Orchestrator:
     def __init__(self):
         self.logger = AgentLogger('orchestrator')
-        self.llm = ChatOpenAI(
-            model = get_settings().llm.model,
-            temperature = 0
-        )
+        self.llm = get_llm(temperature=0)
         self._threshold = get_settings().confidence_threshold # default 0.8
 
     async def _decompose(self, task: str) -> list[dict]:

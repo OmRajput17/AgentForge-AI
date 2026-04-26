@@ -18,7 +18,7 @@ def _mock_settings(mock_get_settings, notion_token='', slack_token='', github_ow
 # StandupAgent._summarise_events
 # ═══════════════════════════════════════════════════════════════════
 
-@patch('agentforge.agents.standup_agent.ChatOpenAI')
+@patch('agentforge.agents.standup_agent.get_llm')
 @patch('agentforge.agents.standup_agent.get_settings')
 class TestSummariseEvents:
 
@@ -56,7 +56,7 @@ class TestSummariseEvents:
 # ═══════════════════════════════════════════════════════════════════
 
 @pytest.mark.asyncio
-@patch('agentforge.agents.standup_agent.ChatOpenAI')
+@patch('agentforge.agents.standup_agent.get_llm')
 @patch('agentforge.agents.standup_agent.get_settings')
 class TestGenerateStandup:
 
@@ -98,7 +98,7 @@ class TestGenerateStandup:
 # ═══════════════════════════════════════════════════════════════════
 
 @pytest.mark.asyncio
-@patch('agentforge.agents.standup_agent.ChatOpenAI')
+@patch('agentforge.agents.standup_agent.get_llm')
 @patch('agentforge.agents.standup_agent.get_settings')
 class TestStandupExecute:
 

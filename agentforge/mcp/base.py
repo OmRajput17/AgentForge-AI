@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from tenacity import retry, stop_after_attempt, wait_exponential, RetryError, retry_if_not_exception_type
 from agentforge.logger import AgentLogger
-import asyncio
+import time
 
 class CircuitOpenError(RuntimeError):
     pass
@@ -22,11 +22,11 @@ class CircuitBreaker:
         self._failures += 1
         if self._failures >= self._max:
             self._open = True
-            self._open_at = asyncio.get_event_loop().time()
+            self._open_at = time.monotonic()
 
     def is_open(self) -> bool:
         if self._open:
-            elapsed = asyncio.get_event_loop().time() - self._open_at
+            elapsed = time.monotonic() - self._open_at
             if elapsed > self._reset:
                 self._open = False # half-open: allow one probe
         return self._open

@@ -1,11 +1,11 @@
 # agentforge/agents/dev_agent.py
 import asyncio
-from langchain_openai import ChatOpenAI
+
 from agentforge.agents.base import BaseAgent
 from agentforge.agents.schemas import DevPlan
 from agentforge.mcp.github_server import GitHubMCPServer
 from agentforge.graph.state import AgentForgeState
-from agentforge.config import get_settings
+from agentforge.config import get_settings, get_llm
 
 class DevAgent(BaseAgent):
     '''Handles GitHub operations. Destructive — requires approval.'''
@@ -15,7 +15,7 @@ class DevAgent(BaseAgent):
         self._github = GitHubMCPServer()
 
     async def execute(self, subtask: str, state: AgentForgeState) -> dict:
-        llm    = ChatOpenAI(model=get_settings().llm.model, temperature=0)
+        llm    = get_llm(temperature=0)
         prompt = f'''For this GitHub task: {subtask}
                 Choose ONE action: create_issue | list_issues | read_repo
                 Return a JSON object with keys: action, title, body
