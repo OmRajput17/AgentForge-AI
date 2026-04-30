@@ -1,3 +1,6 @@
+[![CI](https://github.com/OmRajput17/AgentForge-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/OmRajput17/AgentForge-AI/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/agentforge-ai?style=for-the-badge)](https://pypi.org/project/agentforge-ai/) 
+
 # 🔥 AgentForge-AI — Multi-Agent Orchestration over MCP
 
 > **Production-grade AI agent platform** that decomposes natural-language tasks into specialized agent workflows — with human-in-the-loop approval, structured LLM output, and full observability.
