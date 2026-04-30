@@ -111,10 +111,10 @@ class TriageAgent(BaseAgent):
                 slack_msg = self._format_slack_alert(classified, page_url or 'N/A')
                 await asyncio.to_thread(
                     self.slack.send_message,
-                    channel='engineering',
+                    channel=cfg.slack_channel,
                     text = slack_msg
                 )
-                actions.append(f'slack.send_message → #engineering')
+                actions.append(f'slack.send_message → #{cfg.slack_channel}')
             except Exception as e:
                 self.logger.warn(f'Slack failed (non-fatal): {e}')
         else:

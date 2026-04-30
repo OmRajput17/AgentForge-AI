@@ -13,7 +13,11 @@ def init():
     init_config()
     console.print(Panel(
         f'[green]Config created at[/green] {CONFIG_FILE}\n'
-        '[dim]Edit it to add your API keys and MCP tokens.[/dim]',
+        '[dim]Edit it to add your API keys and MCP tokens.[/dim]\n\n'
+        '[yellow]Defaults:[/yellow]\n'
+        '  Slack channel  →  [cyan]#general[/cyan]  (change via [bold]slack_channel[/bold])\n'
+        '  LLM provider   →  [cyan]openai[/cyan]   (supports: openai, groq)\n'
+        '  Lookback hours →  [cyan]24h[/cyan]      (change via [bold]standup_lookback_hours[/bold])',
         title='AgentForge Init', border_style='blue'
     ))
 

@@ -97,9 +97,10 @@ class StandupAgent(BaseAgent):
         ## Step 1 : Get github username
         username = cfg.github_owner or 'unknown'
 
-        ## Step 2 : fetch last 24 hours Github Activity
+        ## Step 2 : fetch recent Github Activity
+        lookback = get_settings().standup_lookback_hours
         self.logger.info(f'Fetching Github activity for {username}...')
-        events = self._github.get_user_activity(username=username, since_hours=24)
+        events = self._github.get_user_activity(username=username, since_hours=lookback)
         activity = self._summarise_events(events=events)
         self.logger.info(f'Found {len(events)} events.')
         actions.append(f'Fetched {len(events)} Github Events')
@@ -119,7 +120,7 @@ class StandupAgent(BaseAgent):
             )
 
             page = self._notion.create_page(
-                parent_id='YOUR_NOTION_PAGE_ID',
+                parent_id=cfg.notion_page_id,
                 title = f'Standup - {username}',
                 content=content
             )
@@ -130,8 +131,8 @@ class StandupAgent(BaseAgent):
         self.logger.info('Posting standup to slack...')
         if cfg.slack_token:
             msg = self._format_slack_message(standup=standup, username=username)
-            self._slack.send_message('#standup', msg)
-            actions.append('Standup posted to #standup')
+            self._slack.send_message(cfg.slack_channel, msg)
+            actions.append(f'Standup posted to #{cfg.slack_channel}')
 
         output = (
             f'Yesterday:\n{standup.yesterday}\n\n'
