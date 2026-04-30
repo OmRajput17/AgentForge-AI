@@ -1,4 +1,4 @@
-# 🔥 AgentForge — Multi-Agent Orchestration over MCP
+# 🔥 AgentForge-AI — Multi-Agent Orchestration over MCP
 
 > **Production-grade AI agent platform** that decomposes natural-language tasks into specialized agent workflows — with human-in-the-loop approval, structured LLM output, and full observability.
 
@@ -80,7 +80,7 @@ agentforge run "Triage all open bugs and alert the team"
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/OmRajput17/AgentForge.git
+git clone https://github.com/OmRajput17/AgentForge-AI.git
 cd AgentForge
 python -m venv venv
 venv\Scripts\activate        # Windows
@@ -94,27 +94,40 @@ pip install -e .
 agentforge init
 ```
 
-This creates `~/.agentforge/config.yml`. Edit it to add your API keys:
+This creates `~/.agentforge/config.yml`. Open it in your editor:
 
-```yaml
-llm:
-  provider: groq                    # or 'openai'
-  model: llama-3.3-70b-versatile    # or 'gpt-4o'
-  api_key: gsk_...                  # your LLM API key
-
-mcp_servers:
-  github_token: ghp_...
-  github_owner: YourUsername
-  github_repo: YourRepo
-  notion_token: secret_...          # optional
-  notion_page_id: abc123...         # optional
-  slack_token: xoxb-...             # optional
-
-auto_approve: false
-confidence_threshold: 0.8
+```bash
+notepad %USERPROFILE%\.agentforge\config.yml     # Windows
+nano ~/.agentforge/config.yml                     # macOS/Linux
 ```
 
-> **Supports both OpenAI and Groq** — switch providers by changing one line in config. No code changes needed.
+Full `config.yml`:
+
+```yaml
+# ── LLM Provider ────────────────────────────────────────
+llm:
+  provider: groq                    # 'openai' or 'groq'
+  model: llama-3.3-70b-versatile    # or 'gpt-4o' for OpenAI
+  api_key: ''                       # your API key
+
+# ── MCP Server Connections ──────────────────────────────
+mcp_servers:
+  github_token: ''                  # GitHub PAT (required)
+  github_owner: ''                  # GitHub username
+  github_repo: ''                   # target repository
+  notion_token: ''                  # Notion integration secret (optional)
+  notion_page_id: ''                # Notion page ID for reports (optional)
+  slack_token: ''                   # Slack bot token (optional)
+  slack_channel: general            # Slack channel for alerts
+
+# ── Behavior ────────────────────────────────────────────
+auto_approve: false                 # skip approval prompts for destructive ops
+confidence_threshold: 0.8           # min confidence for agent routing
+max_iterations: 10                  # max subtasks per run
+standup_lookback_hours: 24          # how far back to fetch GitHub activity
+```
+
+> **Supports OpenAI and Groq** — switch providers by changing `provider` and `model`. No code changes needed.
 
 ### 3. Run a Task
 
