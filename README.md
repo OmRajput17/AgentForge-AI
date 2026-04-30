@@ -77,11 +77,17 @@ agentforge run "Triage all open bugs and alert the team"
 
 ## ⚡ Quick Start
 
-### 1. Clone & Install
+### 1. Install AgentForge
 
+**Option A: Install via PyPI (Recommended)**
+```bash
+pip install agentforge-ai
+```
+
+**Option B: Install from Source**
 ```bash
 git clone https://github.com/OmRajput17/AgentForge-AI.git
-cd AgentForge
+cd AgentForge-AI
 python -m venv venv
 venv\Scripts\activate        # Windows
 # source venv/bin/activate   # macOS/Linux
